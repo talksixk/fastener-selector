@@ -65,7 +65,7 @@ class FastenerApp(QWidget):
         
         #Setting window title and size
         self.setWindowTitle("Fastener Selector")
-        self.resize(500,400)
+        self.resize(500,700)
 
          #Setting window in the center (after the window is created)
         QTimer.singleShot(0, lambda: self.move(
@@ -101,7 +101,7 @@ class FastenerApp(QWidget):
         main_layout.addWidget(title)
 
         #Subtitle
-        subtitle = QLabel("ISO-Based Smart Fastener Selection", alignment=Qt.AlignmentFlag.AlignHCenter)
+        subtitle = QLabel("ISO Based Smart Fastener Selection", alignment=Qt.AlignmentFlag.AlignHCenter)
 
         subtitle.setStyleSheet(
             """
@@ -157,8 +157,43 @@ class FastenerApp(QWidget):
         main_layout.addWidget(self.hole_dia_input)
 
         #Button
+        select_type_layout = QHBoxLayout()
+
         self.button = QPushButton("Select Fasteners")
-        main_layout.addWidget(self.button, alignment=Qt.AlignmentFlag.AlignHCenter)
+        self.button.setObjectName("selectBtn")
+        self.button.setStyleSheet(
+            """
+            QPushButton#selectBtn {
+                background-color: #10539b;
+                font-size: 14px;
+                padding: 3px 10px;
+            }
+            QPushButton#selectBtn:hover {
+                background-color: #0d437d;
+            }
+            """
+        )
+        #The font size and padding must match with pushbtn_style
+        select_type_layout.addWidget(self.button)
+
+        self.clear_input_button = QPushButton("Clear Inputs")
+        self.clear_input_button.setObjectName("clrInputBtn")
+        self.clear_input_button.setStyleSheet(
+            """
+            QPushButton#clrInputBtn {
+                background-color: #ef233c;
+                font-size: 14px;
+                padding: 3px 10px;
+            }
+            QPushButton#clrInputBtn:hover {
+                background-color: #d90429;
+            }
+            """
+        )
+        #The font size and padding must match with pushbtn_style
+        select_type_layout.addWidget(self.clear_input_button)
+
+        main_layout.addLayout(select_type_layout)
 
         #Table Output
         self.table = QTableWidget()
@@ -190,7 +225,6 @@ class FastenerApp(QWidget):
             padding: 3px 10px;
         }
         """
-        self.button.setStyleSheet(pushbtn_style)
         self.copy_button.setStyleSheet(pushbtn_style)
         self.clear_button.setStyleSheet(pushbtn_style)
 
