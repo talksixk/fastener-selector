@@ -276,6 +276,12 @@ class FastenerApp(QWidget):
                 sheet2,
                 size
             )
+
+            if result is None:
+                self.table.setRowCount(0)
+                self.show_toast("No match for given inputs")
+                return
+
         except ValueError:
             print("Input Error: Invalid Input")
             return
@@ -293,7 +299,7 @@ class FastenerApp(QWidget):
         )
         row += 1
 
-       # Flat Washer
+    # Flat Washer
         fw = result["flat_washer"]
 
         if joint_type == "Through":
@@ -342,10 +348,11 @@ class FastenerApp(QWidget):
         data = []
 
         #Add Header
-        headers = []
-        for col in range(cols):
-            headers.append(self.table.horizontalHeaderItem(col).text())
-        data.append("\t".join(headers))
+        # headers = []
+        # for col in range(cols):
+        #     headers.append(self.table.horizontalHeaderItem(col).text())
+        # data.append("\t".join(headers))
+        #Removed headers from copy
 
         #Add Rows
         for row in range(rows):
@@ -384,14 +391,14 @@ class FastenerApp(QWidget):
 
         #Position bottom center
         x = (self.width() - toast.width()) // 2
-        y = self.height() - 60
+        y = self.height() - 150 #tweak to move up or down
         toast.move(x, y)
 
         toast.show()
 
         #Fade animation
         animation = QPropertyAnimation(toast, b"windowOpacity")
-        animation.setDuration(1500)
+        animation.setDuration(2000)
         animation.setStartValue(1)
         animation.setEndValue(0)
         animation.setEasingCurve(QEasingCurve.OutQuad)
