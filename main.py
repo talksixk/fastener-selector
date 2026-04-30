@@ -6,8 +6,9 @@ from PySide6.QtWidgets import (
 )
 from PySide6.QtCore import Qt
 
-from PySide6.QtCore import QPropertyAnimation, QEasingCurve
-from PySide6.QtGui import QColor, QIcon, QFontDatabase, QFont
+from PySide6.QtCore import QPropertyAnimation, QEasingCurve, QTimer
+from PySide6.QtGui import QColor, QIcon, QFontDatabase, QFont, QGuiApplication
+from PySide6.QtSvgWidgets import QSvgWidget
 
 import sys
 from app import select_fastener
@@ -53,18 +54,34 @@ class FastenerApp(QWidget):
 
         self.setWindowIcon(QIcon("assets/img/bolt.ico"))
 
+        #Setting Font
         font_id = QFontDatabase.addApplicationFont("assets/fonts/DMSans-VariableFont_opsz,wght.ttf")
         font_family = QFontDatabase.applicationFontFamilies(font_id)[0]
 
         app.setFont(QFont(font_family, 10))
 
+        #Creating a db connection within app
         self.conn = sqlite3.connect("fasteners.db")
         
+        #Setting window title and size
         self.setWindowTitle("Fastener Selector")
         self.resize(500,400)
 
+         #Setting window in the center (after the window is created)
+        QTimer.singleShot(0, lambda: self.move(
+            QGuiApplication.primaryScreen().availableGeometry().center().x() - self.width() // 2,
+            QGuiApplication.primaryScreen().availableGeometry().center().y() - self.height() // 2 - 10
+        ))
+
         main_layout = QVBoxLayout()
         main_layout.setAlignment(Qt.AlignmentFlag.AlignTop)
+        main_layout.setSpacing(15)
+        main_layout.setContentsMargins(20, 20, 20, 20)
+
+        #Logo
+        logo = QSvgWidget("assets/logo.svg")
+        logo.setFixedSize(90,90)
+        main_layout.addWidget(logo, alignment=Qt.AlignmentFlag.AlignHCenter)
 
         #Title
         title = QLabel("Fastener Selector", alignment=Qt.AlignmentFlag.AlignHCenter)
@@ -101,6 +118,17 @@ class FastenerApp(QWidget):
 
         main_layout.addWidget(subtitle)
 
+        self.hole_type = QLabel("Hole Type Selection:", alignment=Qt.AlignmentFlag.AlignLeft)
+        self.hole_type.setStyleSheet(
+            """
+            QLabel {
+                font-size: 14px;
+                margin-left: 5px;
+            }
+            """
+        )
+        main_layout.addWidget(self.hole_type)
+
         #Joint-Type
         type_layout = QHBoxLayout()
 
@@ -136,7 +164,7 @@ class FastenerApp(QWidget):
         self.table = QTableWidget()
         self.table.setColumnCount(3)
         self.table.setHorizontalHeaderLabels([
-            "ERP/Product Code", "Description", "Quantity"
+            "ERP Code", "Description", "Quantity"
         ])
         
         header = self.table.horizontalHeader()
@@ -154,6 +182,17 @@ class FastenerApp(QWidget):
         #Clear Table
         self.clear_button = QPushButton("Clear Table")
         main_layout.addWidget(self.clear_button, alignment=Qt.AlignmentFlag.AlignHCenter)
+
+        #Setting common pushbutton style
+        pushbtn_style = """
+        QPushButton {
+            font-size: 14px;
+            padding: 3px 10px;
+        }
+        """
+        self.button.setStyleSheet(pushbtn_style)
+        self.copy_button.setStyleSheet(pushbtn_style)
+        self.clear_button.setStyleSheet(pushbtn_style)
 
         self.setLayout(main_layout)
 
