@@ -7,12 +7,21 @@ from PySide6.QtWidgets import (
 from PySide6.QtCore import Qt
 
 from PySide6.QtCore import QPropertyAnimation, QEasingCurve, QTimer
-from PySide6.QtGui import QColor, QIcon, QFontDatabase, QFont, QGuiApplication
+from PySide6.QtGui import QIcon, QFontDatabase, QFont, QGuiApplication
 from PySide6.QtSvgWidgets import QSvgWidget
 
 import sys
+import os
+
 from app import select_fastener
 import sqlite3
+
+def resource_path(relative_path):
+    if getattr(sys, 'frozen', False):
+        base_path = os.path.dirname(sys.executable)
+    else:
+        base_path = os.path.abspath(".")
+    return os.path.join(base_path, relative_path)
 
 def format_description(row):
     product_code = row[0]
@@ -52,16 +61,24 @@ class FastenerApp(QWidget):
     def __init__(self):
         super().__init__()
 
-        self.setWindowIcon(QIcon("assets/img/bolt.ico"))
+        self.setWindowIcon(QIcon(resource_path("assets/img/bolt.ico")))
 
         #Setting Font
-        font_id = QFontDatabase.addApplicationFont("assets/fonts/DMSans-VariableFont_opsz,wght.ttf")
-        font_family = QFontDatabase.applicationFontFamilies(font_id)[0]
+        font_path = resource_path("assets/fonts/DMSans-Regular.ttf")
 
-        app.setFont(QFont(font_family, 10))
+        font_id = QFontDatabase.addApplicationFont(font_path)
+
+        if font_id != -1:
+            families = QFontDatabase.applicationFontFamilies(font_id)
+            if families:
+                app.setFont(QFont(families[0], 10))
+        else:
+            print("Font load failed:", font_path)
+
+        # app.setFont(QFont(font_family, 10))
 
         #Creating a db connection within app
-        self.conn = sqlite3.connect("fasteners.db")
+        self.conn = sqlite3.connect(resource_path("fasteners.db"))
         
         #Setting window title and size
         self.setWindowTitle("Fastener Selector")
@@ -79,7 +96,7 @@ class FastenerApp(QWidget):
         main_layout.setContentsMargins(20, 20, 20, 20)
 
         #Logo
-        logo = QSvgWidget("assets/logo.svg")
+        logo = QSvgWidget(resource_path("assets/logo.svg"))
         logo.setFixedSize(90,90)
         main_layout.addWidget(logo, alignment=Qt.AlignmentFlag.AlignHCenter)
 
@@ -101,7 +118,7 @@ class FastenerApp(QWidget):
         main_layout.addWidget(title)
 
         #Subtitle
-        subtitle = QLabel("ISO Based Smart Fastener Selection", alignment=Qt.AlignmentFlag.AlignHCenter)
+        subtitle = QLabel("ISO Based Smart Fastener Selection (BETA v01)", alignment=Qt.AlignmentFlag.AlignHCenter)
 
         subtitle.setStyleSheet(
             """
@@ -119,14 +136,13 @@ class FastenerApp(QWidget):
         main_layout.addWidget(subtitle)
 
         self.hole_type = QLabel("Hole Type Selection:", alignment=Qt.AlignmentFlag.AlignLeft)
-        self.hole_type.setStyleSheet(
-            """
+        self.hole_type.setStyleSheet("""
             QLabel {
-                font-size: 14px;
+                font-size: 13px;
                 margin-left: 5px;
+                color: #94a3b8;
             }
-            """
-        )
+        """)
         main_layout.addWidget(self.hole_type)
 
         #Joint-Type
@@ -161,35 +177,45 @@ class FastenerApp(QWidget):
 
         self.button = QPushButton("Select Fasteners")
         self.button.setObjectName("selectBtn")
-        self.button.setStyleSheet(
-            """
+        self.button.setStyleSheet("""
             QPushButton#selectBtn {
-                background-color: #10539b;
+                background-color: #2563eb;
+                color: white;
                 font-size: 14px;
-                padding: 3px 10px;
+                padding: 6px 14px;
+                border-radius: 6px;
             }
+
             QPushButton#selectBtn:hover {
-                background-color: #0d437d;
+                background-color: #1d4ed8;
             }
-            """
-        )
+
+            QPushButton#selectBtn:pressed {
+                background-color: #1e40af;
+            }
+        """)
         #The font size and padding must match with pushbtn_style
         select_type_layout.addWidget(self.button)
 
         self.clear_input_button = QPushButton("Clear Inputs")
         self.clear_input_button.setObjectName("clrInputBtn")
-        self.clear_input_button.setStyleSheet(
-            """
+        self.clear_input_button.setStyleSheet("""
             QPushButton#clrInputBtn {
-                background-color: #ef233c;
+                background-color: #dc2626;
+                color: white;
                 font-size: 14px;
-                padding: 3px 10px;
+                padding: 6px 14px;
+                border-radius: 6px;
             }
+
             QPushButton#clrInputBtn:hover {
-                background-color: #d90429;
+                background-color: #b91c1c;
             }
-            """
-        )
+
+            QPushButton#clrInputBtn:pressed {
+                background-color: #7f1d1d;
+            }
+        """)
         #The font size and padding must match with pushbtn_style
         select_type_layout.addWidget(self.clear_input_button)
 
@@ -220,10 +246,21 @@ class FastenerApp(QWidget):
 
         #Setting common pushbutton style
         pushbtn_style = """
-        QPushButton {
-            font-size: 14px;
-            padding: 3px 10px;
-        }
+            QPushButton {
+                background-color: #334155;
+                color: #e2e8f0;
+                font-size: 13px;
+                padding: 6px 12px;
+                border-radius: 6px;
+            }
+
+            QPushButton:hover {
+                background-color: #475569;
+            }
+
+            QPushButton:pressed {
+                background-color: #1e293b;
+            }
         """
         self.copy_button.setStyleSheet(pushbtn_style)
         self.clear_button.setStyleSheet(pushbtn_style)
@@ -235,6 +272,9 @@ class FastenerApp(QWidget):
 
         #Button Click
         self.button.clicked.connect(self.handle_click)
+
+        #Clear Inputs Click
+        self.clear_input_button.clicked.connect(self.clear_inputs)
 
         #Copy Button Click
         self.copy_button.clicked.connect(self.copy_table)
@@ -341,6 +381,21 @@ class FastenerApp(QWidget):
         self.table.setItem(row, 1, QTableWidgetItem(str(desc)))
         self.table.setItem(row, 2, QTableWidgetItem(str(qty)))
 
+    def clear_inputs(self):
+        # Clear text fields
+        self.sheet1_input.clear()
+        self.sheet2_input.clear()
+        self.hole_dia_input.clear()
+
+        # Reset radio button to default (Through Hole)
+        self.through_radio.setChecked(True)
+
+        # Reset placeholder text
+        self.sheet2_input.setPlaceholderText("Sheet 2 Thickness (mm)")
+        
+        # Optional: toast message
+        self.show_toast("Inputs cleared")
+
     def copy_table(self):
         rows = self.table.rowCount()
         cols = self.table.columnCount()
@@ -416,6 +471,65 @@ class FastenerApp(QWidget):
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
+    app.setStyleSheet("""
+    QWidget {
+        background-color: #0f172a;
+        color: #e2e8f0;
+    }
+
+    QLabel {
+        font-size: 13px;
+    }
+
+    QLineEdit {
+        background-color: #1e293b;
+        border: 1px solid #334155;
+        border-radius: 6px;
+        padding: 6px;
+        color: #e2e8f0;
+    }
+
+    QLineEdit:focus {
+        border: 1px solid #38bdf8;
+    }
+
+    QRadioButton {
+        spacing: 6px;
+        color: #e2e8f0;
+    }
+
+    QRadioButton::indicator {
+        width: 14px;
+        height: 14px;
+    }
+
+    QRadioButton::indicator:unchecked {
+        border: 2px solid #64748b;
+        border-radius: 7px;
+        background-color: transparent;
+    }
+
+    QRadioButton::indicator:checked {
+        border: 2px solid #38bdf8;
+        border-radius: 7px;
+        background-color: #38bdf8;
+    }
+
+    QTableWidget {
+        background-color: #1e293b;
+        border: 1px solid #334155;
+        border-radius: 6px;
+        gridline-color: #334155;
+    }
+
+    QHeaderView::section {
+        background-color: #0f172a;
+        color: #94a3b8;
+        padding: 4px;
+        border: none;
+    }
+    """)
+
     window = FastenerApp()
     window.show()
     sys.exit(app.exec())
