@@ -41,21 +41,31 @@ def format_description(row):
     return f"{type_name}, {size}, {length_part}, {ft_part}, {grade} ({product_code})"
 
 def get_size_from_hole(hole_dia):
-        standard = {
-            "M3": 3,
-            "M4": 4,
-            "M5": 5,
-            "M6": 6,
-            "M8": 8,
-            "M10": 10,
-            "M12": 12,
-            "M16": 16,
-            "M20": 20
-        }
+    """
+    Returns nominal bolt size based on ISO clearance hole ranges.
+    Uses conservative mapping (never undersizes).
+    """
 
-        closest = min(standard.items(), key=lambda x: abs(x[1] - hole_dia))
+    CLEARANCE_TABLE = [
+        ("M3", 3.2),
+        ("M4", 4.2),
+        ("M5", 5.3),
+        ("M6", 6.6),
+        ("M8", 9.0),
+        ("M10", 11.0),
+        ("M12", 13.5),
+        ("M16", 17.5),
+        ("M20", 22.0),
+    ]
 
-        return closest[0]
+    for size, max_hole in CLEARANCE_TABLE:
+        if hole_dia <= max_hole:
+            #debug
+            print(f"Size: {size}")
+            return size
+
+    # If hole too large → return largest or raise error
+    raise ValueError(f"Hole diameter {hole_dia} mm exceeds supported range")
 
 class FastenerApp(QWidget):
     def __init__(self):
@@ -314,7 +324,8 @@ class FastenerApp(QWidget):
                 self.conn,
                 sheet1,
                 sheet2,
-                size
+                size,
+                joint_type
             )
 
             if result is None:

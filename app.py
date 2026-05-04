@@ -37,21 +37,81 @@ def select_next_length(required_length, available_lengths):
     #if not found return none
     return None
 
-def required_bolt_length(sheet1, sheet2):
+FLAT_WASHER_THICKNESS = {
+    "M3": 0.5,
+    "M4": 0.8,
+    "M5": 1.0,
+    "M6": 1.6,
+    "M8": 1.6,
+    "M10": 2.0,
+    "M12": 2.5,
+    "M16": 3.0,
+    "M20": 3.0,
+    "M24": 4.0,
+}
 
-    flat_washer = 1.6
-    spring_washer = 2.5
-    nut_height = 5
-    projection = 2
+SPRING_WASHER_THICKNESS = {
+    "M3": 0.7,
+    "M4": 0.9,
+    "M5": 1.2,
+    "M6": 1.6,
+    "M8": 2.0,
+    "M10": 2.5,
+    "M12": 3.0,
+    "M16": 3.5,
+    "M20": 4.0,
+    "M24": 5.0,
+}
 
-    total = (
-        sheet1 +
-        sheet2 +
-        2 * flat_washer +
-        spring_washer +
-        nut_height +
-        projection
-    )
+NUT_HEIGHT = {
+    "M3": 2.4,
+    "M4": 3.2,
+    "M5": 4.0,
+    "M6": 5.0,
+    "M8": 6.5,
+    "M10": 8.0,
+    "M12": 10.0,
+    "M16": 13.0,
+    "M20": 16.0,
+    "M24": 19.0,
+}
+
+def required_bolt_length(sheet1, sheet2, size, joint_type):
+
+    flat_washer = FLAT_WASHER_THICKNESS.get(size)
+
+    if flat_washer is None:
+        raise ValueError(f"Flat Washer thickness not defined for {size}")
+    
+    spring_washer = SPRING_WASHER_THICKNESS.get(size)
+
+    if spring_washer is None:
+        raise ValueError(f"Spring Washer thickness not defined for {size}")
+    
+    nut_height = NUT_HEIGHT.get(size)
+
+    if nut_height is None:
+        raise ValueError(f"Nut thickness not defined for {size}")
+    
+    projection = 2  # threads beyond nut
+
+    total = sheet1 + sheet2
+
+    if joint_type == "Through":
+        total += (
+            2 * flat_washer +
+            spring_washer +
+            nut_height +
+            projection
+        )
+    else:  # Blind
+        total += (
+            flat_washer +
+            spring_washer
+        )
+
+    #debug
+    print("Total Length: ", total)
 
     return total
 
@@ -183,34 +243,61 @@ def get_component(conn, size, keyword):
 
     return rows[0]
 
-def select_fastener(conn, sheet1, sheet2, size):
+def select_fastener(conn, sheet1, sheet2, size, joint_type):
 
     bolt_catalog = build_bolt_catalog(conn)
 
-    req_length = required_bolt_length(sheet1, sheet2)
+    req_length = required_bolt_length(sheet1, sheet2, size, joint_type)
 
     if size not in bolt_catalog:
         return None
 
     selected_length = select_next_length(req_length, bolt_catalog[size])
 
+    #debug
+    if selected_length is not None:
+        print(f"Selected Length: {selected_length}")
+
     if selected_length is None:
         return None
 
     bolt = get_bolt(conn, size, selected_length)
 
+    #debug
+    if bolt is not None:
+        print(bolt)
+
     if bolt is None:
+        print("Bolt is None")
         return None
 
     flat_washer = get_component(conn, size, "FLAT")
+
+    #debug
+    if flat_washer is not None:
+        print(flat_washer)
+
     spring_washer = get_component(conn, size, "SPRING")
+
+    if spring_washer is not None:
+        print(spring_washer)
+
     nut = get_component(conn, size, "HEXAGON FULL NUT")
 
     if not all([flat_washer, spring_washer]):
+        print("Washer is None")
         return None
     
     if nut is None:
         return None
+
+    #debug
+    print(f"required_length: {req_length},"
+        f"selected_length: {selected_length},"
+        f"bolt: {bolt},"
+        f"flat_washer: {flat_washer},"
+        f"spring_washer: {spring_washer},"
+        f"nut: {nut}")
 
     return {
         "required_length": req_length,
